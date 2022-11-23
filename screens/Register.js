@@ -19,14 +19,16 @@ import * as Font from "expo-font";
 
 const appIcon = require("../assets/logo.png");
 
-export default class LoginScreen extends Component {
+export default class RegisterScreen extends Component {
     constructor(props) {
         super(props);
         this.state = {
+            first_name: "",
+            last_name: "",
             email: "",
             password: "",
-            fontsLoaded: false,
-            userSignedIn: false
+            confirmPassword: "",
+            fontsLoaded: false
         };
     }
     async _loadFontsAsync() {
@@ -38,54 +40,87 @@ export default class LoginScreen extends Component {
         this._loadFontsAsync();
     }
 
-    signIn = async (email, password) => {
-        firebase
-            .auth()
-            .signInWithEmailAndPassword(email, password)
-            .then(() => {
-                this.props.navigation.replace("Dashboard");
-            })
-            .catch(error => {
-                Alert.alert(error.message);
-            });
+    registerUser = (email, password, confirmPassword, first_name, last_name) => {
+        if (password == confirmPassword) {
+            firebase
+                .auth()
+                .createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    Alert.alert("User registered!!");
+                    console.log(userCredential.user.uid)
+                    this.props.navigation.replace("Login");
+                    firebase.database().ref("/users/" + userCredential.user.uid)
+                        .set({
+                            email: userCredential.user.email,
+                            first_name: first_name,
+                            last_name: last_name,
+                            current_theme: "dark"
+                        })
+                })
+                .catch(error => {
+                    Alert.alert(error.message);
+                });
+        } else {
+            Alert.alert("Passwords don't match!");
+        }
     };
 
 
     render() {
 
-        const { email, password } = this.state;
+        const { email, password, confirmPassword, first_name, last_name } = this.state;
 
         return (
             <View style={styles.container}>
                 <SafeAreaView style={styles.droidSafeArea} />
 
-                <Text style={styles.appTitleText}>Spectogram</Text>
-                <Image source={appIcon} style={styles.appIcon} />
+                <Text style={styles.appTitleText}>Register</Text>
 
+                <TextInput
+                    style={styles.textinput}
+                    onChangeText={text => this.setState({ first_name: text })}
+                    placeholder={"First name"}
+                    placeholderTextColor={"#FFFFFF"}
+
+                />
+                <TextInput
+                    style={styles.textinput}
+                    onChangeText={text => this.setState({ last_name: text })}
+                    placeholder={"Last name"}
+                    placeholderTextColor={"#FFFFFF"}
+
+                />
                 <TextInput
                     style={styles.textinput}
                     onChangeText={text => this.setState({ email: text })}
                     placeholder={"Enter Email"}
                     placeholderTextColor={"#FFFFFF"}
-                    autoFocus
+
                 />
                 <TextInput
-                    style={[styles.textinput, { marginTop: 20 }]}
+                    style={styles.textinput}
                     onChangeText={text => this.setState({ password: text })}
                     placeholder={"Enter Password"}
                     placeholderTextColor={"#FFFFFF"}
                     secureTextEntry
                 />
+                <TextInput
+                    style={styles.textinput}
+                    onChangeText={text => this.setState({ confirmPassword: text })}
+                    placeholder={"Re-enter Password"}
+                    placeholderTextColor={"#FFFFFF"}
+                    secureTextEntry
+                />
                 <TouchableOpacity
                     style={[styles.button, { marginTop: 20 }]}
-                    onPress={() => this.signIn(email, password)}
+                    onPress={() => this.registerUser(email, password, confirmPassword, first_name, last_name)}
                 >
-                    <Text style={styles.buttonText}>Login</Text>
+                    <Text style={styles.buttonText}>Register</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    onPress={() => this.props.navigation.navigate("RegisterScreen")}
+                    onPress={() => this.props.navigation.replace("Login")}
                 >
-                    <Text style={styles.buttonTextNewUser}>New User ?</Text>
+                    <Text style={styles.buttonTextNewUser}>Login ?</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -117,12 +152,13 @@ const styles = StyleSheet.create({
     },
     textinput: {
         width: RFValue(250),
-        height: RFValue(50),
+        height: RFValue(40),
         padding: RFValue(10),
+        marginTop: RFValue(10),
         borderColor: "#FFFFFF",
         borderWidth: RFValue(4),
         borderRadius: RFValue(10),
-        fontSize: RFValue(20),
+        fontSize: RFValue(15),
         color: "#FFFFFF",
         backgroundColor: "#000000"
     },
